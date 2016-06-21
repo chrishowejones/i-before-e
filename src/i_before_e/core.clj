@@ -19,11 +19,6 @@
   [words]
   (map #(vector % 1) words))
 
-(defn- read-word-unixdist-list []
-  (s/split (slurp "http://www.puzzlers.org/pub/wordlists/unixdict.txt") #"\n"))
-
-
-
 (defn- format-plausible
   [plausible?]
   (if plausible? "plausible" "implausible"))
@@ -51,20 +46,19 @@
                                            (s/split #"\s")
                                            format-line)))
 
-(defn read-word-freq-list
-  "Read the word frequency list"
-  []
-  (map format-freq-line (drop 1 (s/split (slurp "http://ucrel.lancs.ac.uk/bncfreq/lists/1_2_all_freq.txt") #"\n"))))
-
 (defn -main []
-  (i-before-e-except-after-c-plausible? "Check unixdist list" (apply-freq-1 (read-word-unixdist-list)))
-  (i-before-e-except-after-c-plausible? "Word frequencies (stretch goal)" (read-word-freq-list)))
+  (with-open [rdr (clojure.java.io/reader "http://www.puzzlers.org/pub/wordlists/unixdict.txt")]
+   (i-before-e-except-after-c-plausible? "Check unixdist list" (apply-freq-1 (line-seq rdr))))
+  (with-open [rdr (clojure.java.io/reader "http://ucrel.lancs.ac.uk/bncfreq/lists/1_2_all_freq.txt")]
+   (i-before-e-except-after-c-plausible? "Word frequencies (stretch goal)" (map format-freq-line (drop 1 (line-seq rdr))))))
 
 
 (comment
 
   (read-word-freq-list)
 
-  (i-before-e-except-after-c-plausible? "Word frequencies (stretch goal)" (read-word-freq-list))
+
+  (with-open [rdr (clojure.java.io/reader "http://www.puzzlers.org/pub/wordlists/unixdict.txt")]
+    (i-before-e-except-after-c-plausible? "Test" (apply-freq-1 (line-seq rdr))))
 
   )
