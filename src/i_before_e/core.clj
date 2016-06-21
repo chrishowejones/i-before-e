@@ -22,8 +22,7 @@
 (defn- read-word-unixdist-list []
   (s/split (slurp "http://www.puzzlers.org/pub/wordlists/unixdict.txt") #"\n"))
 
-(defn- read-word-freq-list []
-  (s/split (slurp "http://ucrel.lancs.ac.uk/bncfreq/lists/1_2_all_freq.txt") #"\n"))
+
 
 (defn- format-plausible
   [plausible?]
