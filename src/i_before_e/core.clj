@@ -1,34 +1,71 @@
 (ns i-before-e.core
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s])
+  (:gen-class))
 
-(defn plausible?
-  "Word is plausible because it has either i after e not before c or i before e after c"
-  [word]
-  (let [lc-word (s/lower-case word)]
-    (or
-     (not (re-seq #"(ei)|(ie)" lc-word))
-     (re-seq #"(?<!c)ie" lc-word)
-     (re-seq #"cei" lc-word))))
+(def patterns {:cie #"cie" :ie #"(?<!c)ie" :cei #"cei" :ei #"(?<!c)ei"})
 
-(defn count-plausible-not-plausible
-  "Increment either the plausible or not-plausible count in map depending on result of plausible? for given word."
-  [{:keys [plausible not-plausible]} word]
-  (if (plausible? word)
-    {:plausible (inc plausible) :not-plausible not-plausible}
-    {:plausible plausible :not-plausible (inc not-plausible)}))
+(defn update-counts
+  "Given a map of counts of matching patterns and a word, increment any count if the word matches it's pattern."
+  [counts [word freq]]
+  (apply hash-map (mapcat (fn [[k v]] [k (if (re-seq (patterns k) word) (+ freq v) v)]) counts)))
 
-(defn plausible-vs-not-plausible
-  "Reduce over each word read from wordlist determining if it's plausible or not plausible and keep a map of counts of each."
+(defn count-ie-ei-combinations
+  "Update counts of all ie and ei combinations"
   [words]
-  (reduce count-plausible-not-plausible {:plausible 0 :not-plausible 0} words))
+  (reduce update-counts {:ie 0 :cie 0 :ei 0 :cei 0} words))
+
+(defn apply-freq-1
+  "Apply a frequency of one to words"
+  [words]
+  (map #(vector % 1) words))
 
 (defn- read-word-unixdist-list []
-  (s/split (slurp "http://www.puzzlers.org/pub/wordlists/unixdict.txt") #"\s"))
+  (s/split (slurp "http://www.puzzlers.org/pub/wordlists/unixdict.txt") #"\n"))
+
+(defn- read-word-freq-list []
+  (s/split (slurp "http://ucrel.lancs.ac.uk/bncfreq/lists/1_2_all_freq.txt") #"\n"))
+
+(defn- format-plausible
+  [plausible?]
+  (if plausible? "plausible" "implausible"))
+
+(defn- apply-rule [desc examples contra]
+  (let [plausible? (<= (* 2 contra) examples)]
+    (println (format "The sub rule %s is %s. There are %d examples and %d counter-examples.\n" desc (format-plausible plausible?) examples contra))
+    plausible?))
 
 (defn i-before-e-except-after-c-plausible?
-  "Rule 'I before e except after c is plausible if the plausible count is more than 2 times the not plausible count."
-  [word-list]
-  (let [{:keys [plausible not-plausible]} (plausible-vs-not-plausible word-list)]
-    (< (* 2 not-plausible) plausible)))
+  "Check if i before e after c plausible?"
+  [description words]
+  (do
+    (println description)
+    (let [counts (count-ie-ei-combinations words)
+          subrule1 (apply-rule "I before E when not preceeded by C" (:ie counts) (:ei counts))
+          subrule2 (apply-rule "E before I when preceeded by C" (:cei counts) (:cie counts))
+          rule (and subrule1 subrule2)]
+      (println (format "Overall the rule 'I before E except after C' is %s" (format-plausible rule)))
+      rule)))
 
-(i-before-e-except-after-c-plausible? (read-word-unixdist-list))
+(defn format-freq-line [line] (letfn [(format-line [xs] [(first xs) (read-string (last xs))])]
+                                       (-> line
+                                           s/trim
+                                           (s/split #"\s")
+                                           format-line)))
+
+(defn read-word-freq-list
+  "Read the word frequency list"
+  []
+  (map format-freq-line (drop 1 (s/split (slurp "http://ucrel.lancs.ac.uk/bncfreq/lists/1_2_all_freq.txt") #"\n"))))
+
+(defn -main []
+  (i-before-e-except-after-c-plausible? "Check unixdist list" (apply-freq-1 (read-word-unixdist-list)))
+  (i-before-e-except-after-c-plausible? "Word frequencies (stretch goal)" (read-word-freq-list)))
+
+
+(comment
+
+  (read-word-freq-list)
+
+  (i-before-e-except-after-c-plausible? "Word frequencies (stretch goal)" (read-word-freq-list))
+
+  )

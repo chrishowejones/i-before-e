@@ -2,48 +2,26 @@
   (:require [clojure.test :refer :all]
             [i-before-e.core :refer :all]))
 
-(deftest test-ei-not-after-c
-  (testing "Given 'albeit'  return not plausible."
-    (is (not (plausible? "albeit"))))
-  (testing "Given 'their'  return not plausible."
-    (is (not (plausible? "their")))))
+(deftest test-update-counts
+  (testing "Given {:ie 1 :cie 0 :ei 0 :cei 0} and 'fierce' return {:ie 2 :cie 0 :ei 0 :cei 0}"
+    (is (= {:ie 2 :cie 0 :ei 0 :cei 0} (update-counts {:ie 1 :cie 0 :ei 0 :cei 0} ["fierce" 1]))))
+  (testing "Given {:ie 0 :cie 1 :ei 0 :cei 0} and 'ancient' return {:ie 0 :cie 2 :ei 0 :cei 0}"
+    (is (= {:ie 0 :cie 2 :ei 0 :cei 0} (update-counts {:ie 0 :cie 1 :ei 0 :cei 0} ["ancient" 1]))))
+  (testing "Given {:ie 0 :cie 0 :ei 1 :cei 0} and 'counterfeit' return {:ie 0 :cie 0 :ei 2 :cei 0}"
+    (is (= {:ie 0 :cie 0 :ei 2 :cei 0} (update-counts {:ie 0 :cie 0 :ei 1 :cei 0} ["counterfeit" 1]))))
+  (testing "Given {:ie 0 :cie 0 :ei 0 :cei 1} and 'receive' return {:ie 0 :cie 0 :ei 0 :cei 2}"
+    (is (= {:ie 0 :cie 0 :ei 0 :cei 2} (update-counts {:ie 0 :cie 0 :ei 0 :cei 1} ["receive" 1]))))
+  (testing "Given {:ie 0 :cie 0 :ei 0 :cei 0} and 'dummy' return {:ie 0 :cie 0 :ei 0 :cei 0}"
+    (is (= {:ie 0 :cie 0 :ei 0 :cei 0} (update-counts {:ie 0 :cie 0 :ei 0 :cei 0} ["dummy" 1])))))
 
-(deftest test-no-ie-or-ie
-  (testing "Given 'the' return plausible."
-    (is (plausible? "the")))
-  (testing "Given 'line' return plausible."
-    (is (plausible? "line")))
-  (testing "Given 'efghi' return plausible."
-    (is (plausible? "efghi"))))
-
-(deftest test-ie-after-c-not-plausible
-  (testing "Given 'recieve' return not plausible."
-    (is (not (plausible? "recieve")))))
-
-(deftest test-ei-after-c
-  (testing "Given 'receive' return plausible."
-    (is (plausible? "receive"))))
-
-(deftest test-ie-not-after-c
-  (testing "Given 'fierce' return plausible"
-    (is (plausible? "fierce"))
-    (is (plausible? "Fierce"))
-    (is (plausible? "FIERCE"))))
-
-(deftest test-count-plausible-not-plausible
-  (testing "Given {:plausible 1 :not-plausible 0} and 'fierce' return {:plausible 2 :not-plausible 0}"
-    (is (= {:plausible 2 :not-plausible 0} (count-plausible-not-plausible {:plausible 1 :not-plausible 0} "fierce"))))
-  (testing "Given {:plausible 1 :not-plausible 1} and 'their' return {:plausible 1 :not-plausible 2}"
-    (is (= {:plausible 1 :not-plausible 2} (count-plausible-not-plausible {:plausible 1 :not-plausible 1} "their")))))
-
-(deftest test-plausible-vs-not-plausible
-  (testing "Given 'fierce', 'the', 'albeit', 'die', 'their' should get 3 plausible and 2 not plausible"
-    (is (= {:plausible 3 :not-plausible 2} (plausible-vs-not-plausible ["fierce" "the" "albeit" "DIE" "ThEiR"])))))
-
+(deftest test-count-ie-ei-combinations
+  (testing "Given [\"fierce\", \"counterfeit\", \"ancient\", \"the\", \"conceit\", \"dummy\"] expect {:ie 1, cie 1, :ei 1 :cei 1}"
+    (is (= {:ie 1 :cie 1 :ei 1 :cei 1} (count-ie-ei-combinations (apply-freq-1 ["fierce", "counterfeit", "ancient", "the", "conceit", "dummy"])))))
+  (testing "Given [\"and\", \"dummy\", \"ancient\", \"the\", \"fred\"] expect {:ie 1, cie 1, :ei 1 :cei 1}"
+    (is (= {:ie 0 :cie 0 :ei 0 :cei 0} (count-ie-ei-combinations (apply-freq-1 ["and", "dummy", "the", "fred"]))))))
 
 (deftest test-i-before-e-except-after-c-plausible?
   (testing "Given list of words 'fierce', 'die', 'their', 'the', 'and' expect true"
-    (is (i-before-e-except-after-c-plausible? ["fierce" "die" "their" "the" "and"])))
+    (is (i-before-e-except-after-c-plausible? "Check test" (apply-freq-1 ["fierce" "die" "the" "and"]))))
   (testing "Given list of words 'fierce', 'die', 'their' expect false"
-    (is (not (i-before-e-except-after-c-plausible? ["fierce" "die" "their"]))))
-)
+    (is (not (i-before-e-except-after-c-plausible? "Check test" (apply-freq-1 ["fierce" "ancient" "coefficient" "their"]))))))
